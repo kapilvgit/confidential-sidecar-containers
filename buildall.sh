@@ -15,6 +15,8 @@ echo building azmount
 CGO_ENABLED=0 GOOS=linux go build github.com/Microsoft/confidential-sidecar-containers/cmd/azmount
 echo building remotefs
 CGO_ENABLED=0 GOOS=linux go build github.com/Microsoft/confidential-sidecar-containers/cmd/remotefs
+echo building adns
+CGO_ENABLED=0 GOOS=linux go build github.com/Microsoft/confidential-sidecar-containers/cmd/adns
 popd
 
 echo building get-snp-report
@@ -29,5 +31,9 @@ bash ./build.sh
 popd
 
 pushd docker/skr
+bash ./build.sh
+popd
+
+pushd docker/adns
 bash ./build.sh
 popd

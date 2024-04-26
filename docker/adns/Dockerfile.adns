@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/devcontainers/go:dev-1.22-bookworm AS build
+ENV PROJECT_DIR=/go/src/github.com/microsoft
+WORKDIR ${PROJECT_DIR}/confidential-sidecar-containers
+COPY . ./
+RUN cd tools/get-snp-report && make && mv bin/get-snp-report / && mv bin/get-fake-snp-report /
+
+RUN cd cmd/adns && CGO_ENABLED=0 GOOS=linux go build -o /adns -ldflags="-s -w" main.go
+
+FROM alpine:3.18.6
+
+RUN apk update && apk upgrade --no-cache && apk add --no-cache curl bash jq bind-tools
+
+COPY --from=build /adns /get-snp-report /get-fake-snp-report ./bin/
+
+ENV BUILD_DIR=/go/src/github.com/microsoft/confidential-sidecar-containers
+COPY --from=build ${BUILD_DIR}/docker/adns/adns.sh /
+
+RUN chmod +x /*.sh; date > /made-date
+
+# set the start command
+CMD [ "/adns.sh" ]
