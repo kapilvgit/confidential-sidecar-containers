@@ -7,5 +7,5 @@
 echo Looking up IP address for this deployment
 IP_ADDRESS=`dig +short $DNS_URL`
 
-/bin/adns -loglevel trace -adnsEndpoint test.westeurope.azure.io -serviceFQDN $SERVICE_FQDN -ipAddress $IP_ADDRESS
+/bin/adns -loglevel trace -adnsEndpoint $ADNS_ENDPOINT -serviceFQDN $SERVICE_FQDN -ipAddress $IP_ADDRESS
 sleep 10000

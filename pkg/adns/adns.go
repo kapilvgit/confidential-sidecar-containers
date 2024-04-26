@@ -51,17 +51,21 @@ type registerServiceRequestBody struct {
 	NodeInformation nodeInformation `json:"node_information"`
 }
 
-func GenerateCSR(privateKey *rsa.PrivateKey, cn string) ([]byte, error) {
+func GenerateCSR(privateKey *rsa.PrivateKey, domain string) ([]byte, error) {
 	csrTemplate := x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: cn,
+			CommonName: domain,
 		},
+		DNSNames: []string{domain},
 	}
 
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &csrTemplate, privateKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create CSR")
 	}
+
+	csrPem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+	logrus.Trace("CSR PEM: {}", string(csrPem))
 
 	return csrBytes, nil
 }
@@ -140,7 +144,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 		},
 	}
 
-	csr, _ := GenerateCSR(privateSigningKey, "test.adns.ccf.dev")
+	csr, _ := GenerateCSR(privateSigningKey, addr.Name)
 
 	contacts := [1]string{"kapilv@microsoft.com"}
 	registerServiceBody := registerServiceRequestBody{
