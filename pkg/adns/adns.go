@@ -11,6 +11,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
+	"log"
+	"os"
+	"time"
 
 	"github.com/Microsoft/confidential-sidecar-containers/pkg/attest"
 	"github.com/Microsoft/confidential-sidecar-containers/pkg/common"
@@ -19,7 +23,8 @@ import (
 )
 
 const (
-	RegisterServiceRequestURITemplate = "https://%s/app/register-service/"
+	RegisterServiceRequestURITemplate = "https://%s:8443/app/register-service"
+	GetCertificateRequestURITemplate  = "https://%s:8443/app/get-certificate"
 )
 
 type EndpointAddress struct {
@@ -49,6 +54,10 @@ type registerServiceRequestBody struct {
 	Csr             string          `json:"csr"`
 	Contact         []string        `json:"contact"`
 	NodeInformation nodeInformation `json:"node_information"`
+}
+
+type getCertificateRequestBody struct {
+	ServiceName string `json:"service_dns_name"`
 }
 
 func GenerateCSR(privateKey *rsa.PrivateKey, domain string) ([]byte, error) {
@@ -153,11 +162,72 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 		NodeInformation: nodeInfo,
 	}
 
-	registerRequestJSON, err := json.Marshal(registerServiceBody)
+	registerRequestJson, err := json.Marshal(registerServiceBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marhalling register request failed")
 	}
 
-	logrus.Infof("Adns request %s:", registerRequestJSON)
+	logrus.Infof("ADNS register-service request %s:", registerRequestJson)
+
+	if err := os.WriteFile("/request.json", []byte(registerRequestJson), 0666); err != nil {
+		log.Fatal(err)
+	}
+
+	uri := fmt.Sprintf(RegisterServiceRequestURITemplate, *adnsEndpoint)
+	logrus.Debugf("Posting register-service request to %s", uri)
+	httpResponse, err := common.HTTPPRequest("POST", uri, registerRequestJson, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "ADNS register-service post request failed")
+	}
+
+	httpResponseBodyBytes, err := common.HTTPResponseBody(httpResponse)
+	if err != nil {
+		logrus.Debugf("ADNS Response header: %v", httpResponse)
+		logrus.Debugf("ADNS Response body bytes: %s", string(httpResponseBodyBytes))
+		return nil, errors.Wrapf(err, "pulling adns post response failed")
+	}
+
+	logrus.Debugf("Service registered with ADNS")
+	logrus.Debugf("Waiting to fetch certificate")
+
+	time.Sleep(10 * time.Second)
+
+	getCertificateBody := getCertificateRequestBody{
+		ServiceName: addr.Name,
+	}
+
+	getCertificateJson, err := json.Marshal(getCertificateBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "marhalling register request failed")
+	}
+
+	uri = fmt.Sprintf(GetCertificateRequestURITemplate, *adnsEndpoint)
+	logrus.Debugf("Posting get-certificate request to %s", uri)
+	httpResponse, err = common.HTTPPRequest("POST", uri, getCertificateJson, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "ADNS register-service post request failed")
+	}
+
+	httpResponseBodyBytes, err = common.HTTPResponseBody(httpResponse)
+	if err != nil {
+		logrus.Debugf("ADNS get-certificate response header: %v", httpResponse)
+		logrus.Debugf("ADNS get-certificate response body bytes: %s", string(httpResponseBodyBytes))
+		return nil, errors.Wrapf(err, "pulling adns post response failed")
+	}
+
+	// Retrieve MAA token from the JWT response returned by MAA
+	var getCertificateResponse struct {
+		Certificate string `json:"certificate"`
+	}
+
+	logrus.Info("Unmarshalling get-certificate Response...")
+	if err = json.Unmarshal(httpResponseBodyBytes, &getCertificateResponse); err != nil {
+		return nil, errors.Wrapf(err, "unmarshalling get-certificate http response body failed")
+	}
+
+	if getCertificateResponse.Certificate == "" {
+		return nil, errors.New("empty certificate in adns response")
+	}
+
 	return privateSigningKey, nil
 }

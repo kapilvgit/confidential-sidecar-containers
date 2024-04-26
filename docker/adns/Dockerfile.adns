@@ -17,5 +17,10 @@ COPY --from=build ${BUILD_DIR}/docker/adns/adns.sh /
 
 RUN chmod +x /*.sh; date > /made-date
 
+# Install Let's Encrypt staging certificate
+
+COPY docker/adns/letsencrypt-stg-root-x2.pem /usr/local/share/ca-certificates/letsencrypt-stg-root-x2.crt
+RUN apk --no-cache add ca-certificates && update-ca-certificates
+
 # set the start command
 CMD [ "/adns.sh" ]
