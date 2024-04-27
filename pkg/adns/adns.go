@@ -196,7 +196,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	}
 
 	uri = fmt.Sprintf(GetCertificateRequestURITemplate, *adnsEndpoint)
-	logrus.Debugf("Posting get-certificate request to %s", uri)
+	logrus.Debugf("Posting get-certificate request %s to %s", getCertificateJson, uri)
 	httpResponse, err = common.HTTPPRequest("POST", uri, getCertificateJson, "")
 	if err != nil {
 		return "", "", errors.Wrapf(err, "ADNS register-service post request failed")

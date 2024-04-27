@@ -7,6 +7,7 @@ param managedIDGroup string = resourceGroup().name
 param managedIDName string
 param serviceFQDN string 
 param adnsEndpoint string
+param servicePort int 
 
 var dnsName = deployment().name
 var dnsUrl = '${dnsName}.${location}.azurecontainer.io'
@@ -28,7 +29,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
       ports: [
         {
           protocol: 'TCP'
-          port: 80
+          port: 443
         }
       ]
       type: 'Public'
@@ -51,7 +52,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
           ports: [
             {
               protocol: 'TCP'
-              port: 80
+              port: 443
             }
           ]
           resources: {
@@ -73,7 +74,29 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
               name: 'ADNS_ENDPOINT'
               value: adnsEndpoint
             }
+            {
+              name: 'SERVICE_PORT'
+              value: '${servicePort}'
+            }
           ]
+        }
+      }
+      {
+        name: 'aci-helloworld'
+        properties: {
+          image: 'mcr.microsoft.com/azuredocs/aci-helloworld'
+          ports: [
+            {
+              protocol: 'TCP'
+              port: servicePort
+            }
+          ]
+          resources: {
+            requests: {
+              cpu: 1
+              memoryInGB: 1
+            }
+          }
         }
       }
     ]

@@ -7,8 +7,13 @@
 echo Looking up IP address for this deployment
 IP_ADDRESS=`dig +short $DNS_URL`
 
-envsubst < nginx.conf.template > /usr/local/nginx/conf/nginx.conf 
-
 /bin/adns -loglevel trace -adnsEndpoint $ADNS_ENDPOINT -serviceFQDN $SERVICE_FQDN -ipAddress $IP_ADDRESS
+
+
+# Start nginx with the provisioned certificates
+mv ${SERVICE_FQDN}.crt /etc/nginx/ssl.crt
+mv ${SERVICE_FQDN}.key /etc/nginx/ssl.key
+envsubst '${SERVICE_PORT}' < nginx.conf.template > /etc/nginx/nginx.conf 
+nginx -s reload
 
 sleep 10000  

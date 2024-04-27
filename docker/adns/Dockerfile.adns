@@ -18,7 +18,7 @@ RUN chmod +x /*.sh; date > /made-date
 COPY docker/adns/letsencrypt-stg-root-x2.pem /usr/local/share/ca-certificates/letsencrypt-stg-root-x2.crt
 RUN apk --no-cache add ca-certificates && update-ca-certificates
 
-COPY docker/adns/nginx.conf.template nginx.conf.template 
+COPY docker/adns/nginx.conf.template nginx.conf.template
 
 # set the start command
 CMD [ "/adns.sh" ]
