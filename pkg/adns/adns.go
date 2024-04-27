@@ -12,8 +12,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	"github.com/Microsoft/confidential-sidecar-containers/pkg/attest"
@@ -79,7 +77,7 @@ func GenerateCSR(privateKey *rsa.PrivateKey, domain string) ([]byte, error) {
 	return csrBytes, nil
 }
 
-func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attest.CertState, uvmInfo common.UvmInformation) (key *rsa.PrivateKey, err error) {
+func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attest.CertState, uvmInfo common.UvmInformation) (_ string, _ string, _ error) {
 	logrus.Info("Registering service with adns...")
 	logrus.Debugf("adns endpoint: %v", adnsEndpoint)
 
@@ -87,7 +85,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	logrus.Trace("Generating RSA key pair...")
 	privateSigningKey, err := rsa.GenerateKey(rand.Reader, common.RSASize)
 	if err != nil {
-		return nil, errors.Wrapf(err, "rsa key pair generation failed")
+		return "", "", errors.Wrapf(err, "rsa key pair generation failed")
 	}
 
 	logrus.Trace("Converting RSA key to PEM...")
@@ -97,7 +95,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	// base64 decode the incoming encoded security policy
 	inittimeDataBytes, err := base64.StdEncoding.DecodeString(uvmInfo.EncodedSecurityPolicy)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	logrus.Trace("Fetching attestation report...")
@@ -105,7 +103,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	if attest.IsSNPVM() {
 		attestationReportFetcher, err = attest.NewAttestationReportFetcher()
 		if err != nil {
-			return nil, err
+			return "", "", err
 		}
 	} else {
 		// Use dummy report if SEV device is not available
@@ -117,7 +115,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 
 	rawReport, err := attestationReportFetcher.FetchAttestationReportByte(reportData)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	var uvmReferenceInfoBytes []byte
@@ -126,7 +124,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Decoding UVM encoded security policy from Base64 format failed")
+		return "", "", errors.Wrap(err, "Decoding UVM encoded security policy from Base64 format failed")
 	}
 
 	var base64urlEncodedUvmReferenceInfo string
@@ -164,27 +162,23 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 
 	registerRequestJson, err := json.Marshal(registerServiceBody)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marhalling register request failed")
+		return "", "", errors.Wrapf(err, "marhalling register request failed")
 	}
 
 	logrus.Infof("ADNS register-service request %s:", registerRequestJson)
-
-	if err := os.WriteFile("/request.json", []byte(registerRequestJson), 0666); err != nil {
-		log.Fatal(err)
-	}
 
 	uri := fmt.Sprintf(RegisterServiceRequestURITemplate, *adnsEndpoint)
 	logrus.Debugf("Posting register-service request to %s", uri)
 	httpResponse, err := common.HTTPPRequest("POST", uri, registerRequestJson, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "ADNS register-service post request failed")
+		return "", "", errors.Wrapf(err, "ADNS register-service post request failed")
 	}
 
 	httpResponseBodyBytes, err := common.HTTPResponseBody(httpResponse)
 	if err != nil {
 		logrus.Debugf("ADNS Response header: %v", httpResponse)
 		logrus.Debugf("ADNS Response body bytes: %s", string(httpResponseBodyBytes))
-		return nil, errors.Wrapf(err, "pulling adns post response failed")
+		return "", "", errors.Wrapf(err, "pulling adns post response failed")
 	}
 
 	logrus.Debugf("Service registered with ADNS")
@@ -198,21 +192,21 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 
 	getCertificateJson, err := json.Marshal(getCertificateBody)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marhalling register request failed")
+		return "", "", errors.Wrapf(err, "marhalling register request failed")
 	}
 
 	uri = fmt.Sprintf(GetCertificateRequestURITemplate, *adnsEndpoint)
 	logrus.Debugf("Posting get-certificate request to %s", uri)
 	httpResponse, err = common.HTTPPRequest("POST", uri, getCertificateJson, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "ADNS register-service post request failed")
+		return "", "", errors.Wrapf(err, "ADNS register-service post request failed")
 	}
 
 	httpResponseBodyBytes, err = common.HTTPResponseBody(httpResponse)
 	if err != nil {
 		logrus.Debugf("ADNS get-certificate response header: %v", httpResponse)
 		logrus.Debugf("ADNS get-certificate response body bytes: %s", string(httpResponseBodyBytes))
-		return nil, errors.Wrapf(err, "pulling adns post response failed")
+		return "", "", errors.Wrapf(err, "pulling adns post response failed")
 	}
 
 	// Retrieve MAA token from the JWT response returned by MAA
@@ -222,12 +216,20 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 
 	logrus.Info("Unmarshalling get-certificate Response...")
 	if err = json.Unmarshal(httpResponseBodyBytes, &getCertificateResponse); err != nil {
-		return nil, errors.Wrapf(err, "unmarshalling get-certificate http response body failed")
+		return "", "", errors.Wrapf(err, "unmarshalling get-certificate http response body failed")
 	}
 
 	if getCertificateResponse.Certificate == "" {
-		return nil, errors.New("empty certificate in adns response")
+		return "", "", errors.New("empty certificate in adns response")
 	}
 
-	return privateSigningKey, nil
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateSigningKey)
+	privateKeyPem := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: privateKeyBytes,
+		},
+	)
+
+	return getCertificateResponse.Certificate, string(privateKeyPem), nil
 }

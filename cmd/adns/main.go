@@ -115,5 +115,18 @@ func main() {
 		Port:      8000,
 	}
 
-	adns.RegisterService(adnsEndpoint, addr, certState, EncodedUvmInformation)
+	certs, key, err := adns.RegisterService(adnsEndpoint, addr, certState, EncodedUvmInformation)
+	if err != nil {
+		logrus.Fatal("Service registration fails")
+	}
+
+	err = os.WriteFile(addr.Name+".crt", []byte(certs), 0644)
+	if err != nil {
+		logrus.Fatal("Unable to write certificates")
+	}
+
+	err = os.WriteFile(addr.Name+".key", []byte(key), 0644)
+	if err != nil {
+		logrus.Fatal("Unable to write certificates")
+	}
 }

@@ -7,20 +7,18 @@ RUN cd tools/get-snp-report && make && mv bin/get-snp-report / && mv bin/get-fak
 RUN cd cmd/adns && CGO_ENABLED=0 GOOS=linux go build -o /adns -ldflags="-s -w" main.go
 
 FROM alpine:3.18.6
-
-RUN apk update && apk upgrade --no-cache && apk add --no-cache curl bash jq bind-tools
-
+RUN apk update && apk upgrade --no-cache && apk add --no-cache curl bind-tools nginx envsubst
 COPY --from=build /adns /get-snp-report /get-fake-snp-report ./bin/
-
 ENV BUILD_DIR=/go/src/github.com/microsoft/confidential-sidecar-containers
 COPY --from=build ${BUILD_DIR}/docker/adns/adns.sh /
 
 RUN chmod +x /*.sh; date > /made-date
 
 # Install Let's Encrypt staging certificate
-
 COPY docker/adns/letsencrypt-stg-root-x2.pem /usr/local/share/ca-certificates/letsencrypt-stg-root-x2.crt
 RUN apk --no-cache add ca-certificates && update-ca-certificates
+
+COPY docker/adns/nginx.conf.template nginx.conf.template 
 
 # set the start command
 CMD [ "/adns.sh" ]
