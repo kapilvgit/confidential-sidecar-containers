@@ -14,6 +14,6 @@ IP_ADDRESS=`dig +short $DNS_URL`
 mv ${SERVICE_FQDN}.crt /etc/nginx/ssl.crt
 mv ${SERVICE_FQDN}.key /etc/nginx/ssl.key
 envsubst '${SERVICE_PORT}' < nginx.conf.template > /etc/nginx/nginx.conf 
-nginx -s reload
+nginx 
 
-sleep 10000  
+sleep 100000

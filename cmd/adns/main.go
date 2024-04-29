@@ -112,7 +112,7 @@ func main() {
 		Name:      *serviceFQDN,
 		IpAddress: *ipAddress,
 		Protocol:  "tcp",
-		Port:      8000,
+		Port:      443,
 	}
 
 	certs, key, err := adns.RegisterService(adnsEndpoint, addr, certState, EncodedUvmInformation)

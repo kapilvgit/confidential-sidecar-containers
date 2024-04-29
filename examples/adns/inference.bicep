@@ -8,9 +8,13 @@ param managedIDName string
 param serviceFQDN string 
 param adnsEndpoint string
 param servicePort int 
+param fileShareName string
+param storageAccountName string
 
 var dnsName = deployment().name
 var dnsUrl = '${dnsName}.${location}.azurecontainer.io'
+
+var storageAccountKey = ''
 
 resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
   name: deployment().name
@@ -57,8 +61,8 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
           ]
           resources: {
             requests: {
-              memoryInGB: 2
-              cpu: 2
+              memoryInGB: 4
+              cpu: 1
             }
           }
           environmentVariables: [
@@ -82,9 +86,13 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         }
       }
       {
-        name: 'aci-helloworld'
+        name: 'inference-server'
         properties: {
-          image: 'mcr.microsoft.com/azuredocs/aci-helloworld'
+          image: 'kapilvaswani/inference-server:latest'
+          command: [
+            'tritonserver'
+            '--model-repository=/mnt/models'
+          ]
           ports: [
             {
               protocol: 'TCP'
@@ -93,10 +101,26 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
           ]
           resources: {
             requests: {
-              cpu: 30
-              memoryInGB: 30
+              cpu: 4
+              memoryInGB: 12
             }
           }
+          volumeMounts: [
+            {
+              mountPath: '/mnt/models'
+              name: 'modelsvolume'
+            }
+          ]
+        }
+      }
+    ]
+    volumes: [
+      {
+        name: 'modelsvolume'
+        azureFile: {
+          storageAccountName: storageAccountName
+          storageAccountKey: storageAccountKey
+          shareName: fileShareName
         }
       }
     ]
@@ -104,3 +128,4 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
 }
 
 output ids array = [containerGroup.id]
+

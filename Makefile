@@ -14,3 +14,9 @@ push:
 
 deploy:
 	az deployment group create --name adns-deployment --resource-group ${RESOURCE_GROUP} --parameters examples/adns/adns.bicepparam	
+
+inference-fileshare: 
+	az deployment group create --name inference-deployment --resource-group ${RESOURCE_GROUP} --parameters examples/adns/inference-fileshare.bicepparam	
+
+inference:  
+	az deployment group create --name inference-deployment --resource-group ${RESOURCE_GROUP} --parameters examples/adns/inference.bicepparam	

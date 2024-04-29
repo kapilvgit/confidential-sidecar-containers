@@ -184,7 +184,7 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	logrus.Debugf("Service registered with ADNS")
 	logrus.Debugf("Waiting to fetch certificate")
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	getCertificateBody := getCertificateRequestBody{
 		ServiceName: addr.Name,
