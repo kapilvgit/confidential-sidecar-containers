@@ -4,10 +4,14 @@
 package adns
 
 import (
+	// "net/http"
+	// "io/ioutil"
+    // "log"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	// "crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -76,6 +80,48 @@ func GenerateCSR(privateKey *rsa.PrivateKey, domain string) ([]byte, error) {
 
 	return csrBytes, nil
 }
+
+// func ConnectService() {
+//     cert, err := tls.LoadX509KeyPair("/etc/nginx/ssl.crt", "/etc/nginx/ssl.key")
+//     if err != nil {
+//         log.Fatalf("failed to load client certificate: %v", err)
+//     }
+
+//     caCert, err := ioutil.ReadFile("/etc/nginx/adns_root.crt")
+//     if err != nil {
+//         log.Fatalf("failed to read CA certificate: %v", err)
+//     }
+
+//     caCertPool := x509.NewCertPool()
+//     caCertPool.AppendCertsFromPEM(caCert)
+
+//     tlsConfig := &tls.Config{
+//         Certificates: []tls.Certificate{cert},
+//         RootCAs:      caCertPool,
+//     }
+
+//     transport := &http.Transport{
+//         TLSClientConfig: tlsConfig,
+//     }
+
+//     client := &http.Client{
+//         Transport: transport,
+//     }
+
+//     resp, err := client.Get("https://test2.acidns10.attested.name:443")
+//     if err != nil {
+//         log.Fatalf("failed to make HTTPS request: %v", err)
+//     }
+//     defer resp.Body.Close()
+
+//     body, err := ioutil.ReadAll(resp.Body)
+//     if err != nil {
+//         log.Fatalf("failed to read response body: %v", err)
+//     }
+
+//     fmt.Printf("Response from test2: %s\n", body)
+// }
+
 
 func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attest.CertState, uvmInfo common.UvmInformation) (_ string, _ string, _ error) {
 	logrus.Info("Registering service with adns...")
@@ -169,7 +215,9 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 
 	uri := fmt.Sprintf(RegisterServiceRequestURITemplate, *adnsEndpoint)
 	logrus.Debugf("Posting register-service request to %s", uri)
+
 	httpResponse, err := common.HTTPPRequest("POST", uri, registerRequestJson, "")
+		
 	if err != nil {
 		return "", "", errors.Wrapf(err, "ADNS register-service post request failed")
 	}
@@ -197,7 +245,10 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 
 	uri = fmt.Sprintf(GetCertificateRequestURITemplate, *adnsEndpoint)
 	logrus.Debugf("Posting get-certificate request %s to %s", getCertificateJson, uri)
+
 	httpResponse, err = common.HTTPPRequest("POST", uri, getCertificateJson, "")
+	// httpResponse, err = HTTPPRequest("POST", uri, getCertificateJson, "")
+
 	if err != nil {
 		return "", "", errors.Wrapf(err, "ADNS register-service post request failed")
 	}
@@ -215,21 +266,34 @@ func RegisterService(adnsEndpoint *string, addr EndpointAddress, certState attes
 	}
 
 	logrus.Info("Unmarshalling get-certificate Response...")
+	
 	if err = json.Unmarshal(httpResponseBodyBytes, &getCertificateResponse); err != nil {
+		logrus.Errorf("Failed to unmarshal get-certificate response body: %v", err)
 		return "", "", errors.Wrapf(err, "unmarshalling get-certificate http response body failed")
 	}
-
+	
+	logrus.Debugf("Unmarshalled get-certificate response: %+v", getCertificateResponse)
+	
 	if getCertificateResponse.Certificate == "" {
+		logrus.Error("Empty certificate in get-certificate response")
 		return "", "", errors.New("empty certificate in adns response")
 	}
 
+	logrus.Infof("Received certificate: %s", getCertificateResponse.Certificate)
+	
+	logrus.Info("Marshalling private signing key to PKCS1 format")
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateSigningKey)
+	//logrus.Debugf("Private key bytes: %x", privateKeyBytes)
+	
+	logrus.Info("Encoding private key to PEM format")
 	privateKeyPem := pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
 			Bytes: privateKeyBytes,
 		},
 	)
-
+	logrus.Debugf("Private key PEM: %s", privateKeyPem)
+	
+	logrus.Info("Returning certificate and private key PEM")
 	return getCertificateResponse.Certificate, string(privateKeyPem), nil
 }

@@ -58,7 +58,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
           resources: {
             requests: {
               memoryInGB: 2
-              cpu: 2
+              cpu: 1
             }
           }
           environmentVariables: [
@@ -93,8 +93,8 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
           ]
           resources: {
             requests: {
-              cpu: 30
-              memoryInGB: 30
+              cpu: 1
+              memoryInGB: 12
             }
           }
         }

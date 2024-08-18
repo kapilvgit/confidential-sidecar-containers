@@ -1,5 +1,5 @@
-REGISTRY := kapilvregistry
-RESOURCE_GROUP := kapilv-adns-rg
+REGISTRY := karanregistry
+RESOURCE_GROUP := karan-adns-rg
 
 sub:
 	az account set --subscription "Azure Research Subs" 
@@ -13,7 +13,7 @@ push:
 	docker push ${REGISTRY}.azurecr.io/adns/adns:latest
 
 deploy:
-	az deployment group create --name adns-deployment --resource-group ${RESOURCE_GROUP} --parameters examples/adns/adns.bicepparam	
+	az deployment group create --name adns-deployment2 --resource-group ${RESOURCE_GROUP} --parameters examples/adns/adns.bicepparam	
 
 inference-fileshare: 
 	az deployment group create --name inference-deployment --resource-group ${RESOURCE_GROUP} --parameters examples/adns/inference-fileshare.bicepparam	
