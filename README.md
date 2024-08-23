@@ -45,11 +45,11 @@ Include the Pebble root certificate in ``docker/adns/pebble-root.pem``.
 
 To create a new service, modify the param serviceFQDN in ``examples/adns/adns.bicepparam``, the server_name fields in ``docker/adns/nginx.conf.template``, and the deployment name in the Makefile.
 
-The iptables script in ``docker/adns/iptables.sh` is used for setting up port forwarding to the nginx proxy. This script is copied from https://github.com/Sahamati/fiu-data-governance/blob/ed9c35a781f277a8d63cf97fec1893732a296916/build/config/setup-iptables.sh. The code for restricting IPv6 traffic within this script is currently commented out since it causes errors.
+The iptables script in ``docker/adns/iptables.sh`` is used for setting up port forwarding to the nginx proxy. This script is copied from https://github.com/Sahamati/fiu-data-governance/blob/ed9c35a781f277a8d63cf97fec1893732a296916/build/config/setup-iptables.sh. The code for restricting IPv6 traffic within this script is currently commented out since it causes errors.
 
 Currently, the Init Container does not do anything since the iptables script causes issues during the runtime of the adns container if the Init Container runs the iptabes script.
 
-TODO: To get the service-service communication test to work, we need to either fix the iptables/nginx scripts or replace the nginx proxy with an Envoy proxy.
+TODO: To get the service-service communication test to work, we need to either fix the iptables/nginx scripts to correctly perform port forwarding or replace the nginx proxy with an Envoy proxy (https://github.com/Sahamati/fiu-data-governance/blob/ed9c35a781f277a8d63cf97fec1893732a296916/cmd/ccr-proxy/ccr-proxy-config.yaml#L4).
 
 
 ## Dependencies
