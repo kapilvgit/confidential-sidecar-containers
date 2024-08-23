@@ -25,9 +25,8 @@ sed -i 's/^user .*/user nginx_user nginx_user;/' /etc/nginx/nginx.conf
 
 nginx
 
-# sleep 5
-# curl localhost
-# curl -v http://test3.acidns10.attested.name
-# cat /var/log/nginx/access.log
+#sleep 5
+#curl localhost
+#curl -v http://test3.acidns10.attested.name
 
 sleep 100000

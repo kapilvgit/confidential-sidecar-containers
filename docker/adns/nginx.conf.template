@@ -45,7 +45,7 @@ http {
         listen 15006 ssl;
 
         # server_name localhost;
-        server_name test2.acidns10.attested.name;
+        server_name test3.acidns10.attested.name;
 
         # Protect against the BEAST attack by not using SSLv3 at all. If you need to support older browsers (IE6) you may need to add
         # SSLv3 to the list of protocols below.

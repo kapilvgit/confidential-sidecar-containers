@@ -16,7 +16,7 @@ push:
 	docker push ${REGISTRY}.azurecr.io/adns/init:latest
 
 deploy:
-	az deployment group create --name adns-deployment1 --resource-group ${RESOURCE_GROUP} --parameters examples/adns/adns.bicepparam	
+	az deployment group create --name adns-deployment2 --resource-group ${RESOURCE_GROUP} --parameters examples/adns/adns.bicepparam	
 
 inference-fileshare: 
 	az deployment group create --name inference-deployment --resource-group ${RESOURCE_GROUP} --parameters examples/adns/inference-fileshare.bicepparam	
