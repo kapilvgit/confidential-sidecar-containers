@@ -1,0 +1,16 @@
+# Dockerfile.init
+
+# FROM busybox
+FROM soarinferret/iptablesproxy
+
+# Install prerequisities.
+RUN apk update && apk upgrade && apk add bash
+
+# Copy the script into the image
+COPY init-script.sh /usr/local/bin/init-script.sh
+
+# Make the script executable
+RUN chmod +x /usr/local/bin/init-script.sh
+
+# Set the entry point to run the script
+ENTRYPOINT ["/usr/local/bin/init-script.sh"]

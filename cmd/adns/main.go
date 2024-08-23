@@ -11,14 +11,14 @@ import (
 	"os"
 	"strconv"
 
-	"io/ioutil"
-	"crypto/x509"
-	"crypto/tls"
-	"log"
-	"net/http"
-	"net/url"
-	"net"
-	"encoding/pem"
+	// "io/ioutil"
+	// "crypto/x509"
+	// "crypto/tls"
+	// "log"
+	// "net/http"
+	// "net/url"
+	// "net"
+	// "encoding/pem"
 
 	"github.com/Microsoft/confidential-sidecar-containers/pkg/adns"
 	"github.com/Microsoft/confidential-sidecar-containers/pkg/attest"
@@ -145,94 +145,94 @@ func main() {
 
 
 		
-		cert, err := tls.X509KeyPair([]byte(certs), []byte(key))
-		if err != nil {
-			log.Fatalf("failed to load client certificate: %v", err)
-		}
+		// cert, err := tls.X509KeyPair([]byte(certs), []byte(key))
+		// if err != nil {
+		// 	log.Fatalf("failed to load client certificate: %v", err)
+		// }
 		
-		caCert, err := ioutil.ReadFile("/usr/local/share/ca-certificates/adns-root.crt")
-		if err != nil {
-			log.Fatalf("failed to read CA certificate: %v", err)
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
+		// caCert, err := ioutil.ReadFile("/usr/local/share/ca-certificates/adns-root.crt")
+		// if err != nil {
+		// 	log.Fatalf("failed to read CA certificate: %v", err)
+		// }
+		// caCertPool := x509.NewCertPool()
+		// caCertPool.AppendCertsFromPEM(caCert)
+
+		// // tlsConfig := &tls.Config{
+		// // 	Certificates: []tls.Certificate{cert},
+		// // 	RootCAs:      caCertPool,
+		// // 	// InsecureSkipVerify: true, // Temporarily skip verification
+		// // 	ServerName:   "test2.acidns10.attested.name", 
+		// // }
 
 		// tlsConfig := &tls.Config{
 		// 	Certificates: []tls.Certificate{cert},
 		// 	RootCAs:      caCertPool,
-		// 	// InsecureSkipVerify: true, // Temporarily skip verification
-		// 	ServerName:   "test2.acidns10.attested.name", 
+		// 	ServerName:   "test2.acidns10.attested.name",
+		// 	InsecureSkipVerify: true, // Disable default verification
+		// 	VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		// 		// Parse the server certificate
+		// 		cert, err := x509.ParseCertificate(rawCerts[0])
+		// 		if err != nil {
+		// 			return err
+		// 		}
+	
+		// 		// Print the server certificate
+		// 		fmt.Printf("Server Certificate:\n%s\n", pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw}))
+	
+		// 		// Perform the verification
+		// 		opts := x509.VerifyOptions{
+		// 			Roots:         caCertPool,
+		// 			Intermediates: x509.NewCertPool(),
+		// 		}
+	
+		// 		// Add intermediates if any
+		// 		for _, cert := range rawCerts[1:] {
+		// 			intermediateCert, err := x509.ParseCertificate(cert)
+		// 			if err != nil {
+		// 				return err
+		// 			}
+		// 			opts.Intermediates.AddCert(intermediateCert)
+		// 		}
+	
+		// 		// Perform the verification
+		// 		if _, err := cert.Verify(opts); err != nil {
+		// 			return err
+		// 		}
+	
+		// 		return nil
+		// 	},
 		// }
 
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			RootCAs:      caCertPool,
-			ServerName:   "test2.acidns10.attested.name",
-			InsecureSkipVerify: true, // Disable default verification
-			VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-				// Parse the server certificate
-				cert, err := x509.ParseCertificate(rawCerts[0])
-				if err != nil {
-					return err
-				}
-	
-				// Print the server certificate
-				fmt.Printf("Server Certificate:\n%s\n", pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw}))
-	
-				// Perform the verification
-				opts := x509.VerifyOptions{
-					Roots:         caCertPool,
-					Intermediates: x509.NewCertPool(),
-				}
-	
-				// Add intermediates if any
-				for _, cert := range rawCerts[1:] {
-					intermediateCert, err := x509.ParseCertificate(cert)
-					if err != nil {
-						return err
-					}
-					opts.Intermediates.AddCert(intermediateCert)
-				}
-	
-				// Perform the verification
-				if _, err := cert.Verify(opts); err != nil {
-					return err
-				}
-	
-				return nil
-			},
-		}
+		// transport := &http.Transport{
+		// 	TLSClientConfig: tlsConfig,
+		// }
 
-		transport := &http.Transport{
-			TLSClientConfig: tlsConfig,
-		}
+		// client := &http.Client{
+		// 	Transport: transport,
+		// }
 
-		client := &http.Client{
-			Transport: transport,
-		}
+		// resp, err := client.Get("https://test2.acidns10.attested.name:443")
+		// if err != nil {
+		// 	fmt.Printf("failed to make HTTPS request: %v\n", err)
+		// 	if urlErr, ok := err.(*url.Error); ok {
+		// 		fmt.Printf("URL Error: %v\n", urlErr)
+		// 		if opErr, ok := urlErr.Err.(*net.OpError); ok {
+		// 			fmt.Printf("Op Error: %v\n", opErr)
+		// 			if dnsErr, ok := opErr.Err.(*net.DNSError); ok {
+		// 				fmt.Printf("DNS Error: %v\n", dnsErr)
+		// 			}
+		// 		}
+		// 	}
+		// 	log.Fatalf("failed to make HTTPS request: %v", err)
+		// }
+		// defer resp.Body.Close()
 
-		resp, err := client.Get("https://test2.acidns10.attested.name:443")
-		if err != nil {
-			fmt.Printf("failed to make HTTPS request: %v\n", err)
-			if urlErr, ok := err.(*url.Error); ok {
-				fmt.Printf("URL Error: %v\n", urlErr)
-				if opErr, ok := urlErr.Err.(*net.OpError); ok {
-					fmt.Printf("Op Error: %v\n", opErr)
-					if dnsErr, ok := opErr.Err.(*net.DNSError); ok {
-						fmt.Printf("DNS Error: %v\n", dnsErr)
-					}
-				}
-			}
-			log.Fatalf("failed to make HTTPS request: %v", err)
-		}
-		defer resp.Body.Close()
+		// body, err := ioutil.ReadAll(resp.Body)
+		// if err != nil {
+		// 	log.Fatalf("failed to read response body: %v", err)
+		// }
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("failed to read response body: %v", err)
-		}
-
-		fmt.Printf("Response from test2: %s\n", body)
+		// fmt.Printf("Response from test2: %s\n", body)
 	}
 	
 }

@@ -1,6 +1,8 @@
 # nginx Configuration File
 # https://wiki.nginx.org/Configuration
 
+user nginx_user nginx_user;  # Set the user and group to the created user
+
 worker_processes auto;
 
 events {
@@ -11,13 +13,39 @@ pid        /etc/nginx/nginx.pid;
 
 http {
 
-    #Redirect to https, using 307 instead of 301 to preserve post data
+    server {
+        #listen [::]:15001;
+        listen 15001;
+
+        # server_name localhost;
+        server_name test2.acidns10.attested.name test3.acidns10.attested.name;
+
+        location / {
+            # Intercept outbound HTTP TCP connections and create a new HTTPS request
+            proxy_pass https://$host;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Add client certificate, key, and root CA for proxy if needed
+            proxy_ssl_certificate /etc/nginx/ssl.crt;
+            proxy_ssl_certificate_key /etc/nginx/ssl.key;
+            proxy_ssl_trusted_certificate /etc/nginx/adns_root.crt;
+
+             # Verify the certificate presented by the backend server
+            proxy_ssl_verify on;
+            proxy_ssl_verify_depth 1;
+        }
+    }
 
     server {
-        listen [::]:443 ssl;
-        listen 443 ssl;
+        listen [::]:15006 ssl;
+        listen 15006 ssl;
 
-        server_name localhost;
+        # server_name localhost;
+        server_name test2.acidns10.attested.name;
 
         # Protect against the BEAST attack by not using SSLv3 at all. If you need to support older browsers (IE6) you may need to add
         # SSLv3 to the list of protocols below.
@@ -34,27 +62,28 @@ http {
         ssl_session_cache    shared:SSL:1m; # a 1mb cache can hold about 4000 sessions, so we can hold 40000 sessions
         ssl_session_timeout  24h;
 
-
         # Use a higher keepalive timeout to reduce the need for repeated handshakes
         keepalive_timeout 300; # up from 75 secs default
 
         # remember the certificate for a year and automatically connect to HTTPS
         add_header Strict-Transport-Security 'max-age=31536000; includeSubDomains';
 
-        ssl_certificate      /etc/nginx/ssl.crt;
-        ssl_certificate_key  /etc/nginx/ssl.key;
-
-        # Specify the aDNS root CA certificate
+        # SSL settings for incoming connections
+        ssl_certificate /etc/nginx/ssl.crt;
+        ssl_certificate_key /etc/nginx/ssl.key;
         ssl_client_certificate /etc/nginx/adns_root.crt;
         ssl_verify_client on;
+        ssl_verify_depth 1;
 
         location / {
+            # Handle incoming connections
             proxy_pass http://localhost:${SERVICE_PORT}; 
 
-            proxy_set_header Connection "";
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
+
 }

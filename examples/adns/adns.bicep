@@ -49,6 +49,9 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         name: 'adns'
         properties: {
           image: '${registry}/${repository}/adns:${tag}'
+          securityContext: {
+            privileged: true
+          }
           ports: [
             {
               protocol: 'TCP'
@@ -96,6 +99,17 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
               cpu: 1
               memoryInGB: 12
             }
+          }
+        }
+      }
+    ]
+    initContainers: [
+      {
+        name: 'init-iptables'
+        properties: {
+          image: '${registry}/${repository}/init:${tag}'
+          securityContext: {
+            privileged: true
           }
         }
       }
